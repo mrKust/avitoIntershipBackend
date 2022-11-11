@@ -1,6 +1,5 @@
 package user
 
-type User struct {
-	ID      int    `json:"id"`
+type CreateUserDTO struct {
 	Balance string `json:"balance"`
 }
