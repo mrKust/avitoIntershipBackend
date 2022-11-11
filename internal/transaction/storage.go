@@ -1,1 +1,11 @@
 package transaction
+
+import "context"
+
+type Repository interface {
+	Create(ctx context.Context, transaction *Transaction) error
+	FindAll(ctx context.Context) ([]Transaction, error)
+	FindOne(ctx context.Context, id string) (Transaction, error)
+	Update(ctx context.Context, transaction Transaction) error
+	Delete(ctx context.Context, id string) error
+}

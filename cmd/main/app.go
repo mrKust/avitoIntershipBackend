@@ -2,6 +2,8 @@ package main
 
 import (
 	"avitoIntershipBackend/internal/config"
+	"avitoIntershipBackend/internal/transaction"
+	serviceDB "avitoIntershipBackend/internal/transaction/db"
 	"avitoIntershipBackend/internal/user"
 	userDB "avitoIntershipBackend/internal/user/db"
 	"avitoIntershipBackend/pkg/client/postgresql"
@@ -32,6 +34,26 @@ func main() {
 	}
 
 	userRepository := userDB.NewRepository(postgresSQLClient, logger)
+	transactionRepository := serviceDB.NewRepository(postgresSQLClient, logger)
+
+	ser := transaction.Transaction{
+		FromId:      "4",
+		ToId:        "2",
+		ForService:  "1",
+		OrderId:     "6",
+		MoneyAmount: "100",
+		Status:      "24",
+	}
+
+	transactionRepository.Create(context.Background(), &ser)
+	kek, _ := transactionRepository.FindAll(context.Background())
+	lol, _ := transactionRepository.FindOne(context.Background(), "1")
+	ser.MoneyAmount = "Lol"
+	transactionRepository.Update(context.Background(), ser)
+	transactionRepository.Delete(context.Background(), "1")
+
+	fmt.Println(kek)
+	fmt.Println(lol)
 
 	err = userRepository.Delete(context.Background(), "12")
 	if err != nil {
