@@ -16,7 +16,7 @@ type repository struct {
 }
 
 func (r *repository) Create(ctx context.Context, masterBalance *masterBalance.MasterBalance) error {
-	q := `INSERT INTO masterBalance (fromid, serviceid, orderid, moneyamount) VALUES ($1, $2, $3, $4) RETURNING id`
+	q := `INSERT INTO masterBalance (from_id, service_id, order_id, money_amount) VALUES ($1, $2, $3, $4) RETURNING id`
 	r.logger.Trace(fmt.Sprintf("SQL Query: %s"), q)
 	row := r.client.QueryRow(ctx, q, masterBalance.FromId, masterBalance.ServiceId, masterBalance.OrderId, masterBalance.MoneyAmount)
 	if err := row.Scan(&masterBalance.ID); err != nil {
@@ -34,7 +34,7 @@ func (r *repository) Create(ctx context.Context, masterBalance *masterBalance.Ma
 }
 
 func (r *repository) FindAll(ctx context.Context) (m []masterBalance.MasterBalance, err error) {
-	q := `SELECT id, fromid, serviceid, orderid, moneyamount FROM masterbalance;`
+	q := `SELECT id, from_id, service_id, order_id, money_amount FROM masterbalance;`
 	r.logger.Trace(fmt.Sprintf("SQL Query: %s", q))
 
 	rows, err := r.client.Query(ctx, q)
@@ -63,7 +63,7 @@ func (r *repository) FindAll(ctx context.Context) (m []masterBalance.MasterBalan
 }
 
 func (r *repository) FindOne(ctx context.Context, id string) (masterBalance.MasterBalance, error) {
-	q := `SELECT id, fromid, serviceid, orderid, moneyamount FROM masterbalance WHERE id = $1`
+	q := `SELECT id, from_id, service_id, order_id, money_amount FROM masterbalance WHERE id = $1`
 	r.logger.Trace(fmt.Sprintf("SQL Query: %s", q))
 
 	var m masterBalance.MasterBalance
@@ -77,7 +77,7 @@ func (r *repository) FindOne(ctx context.Context, id string) (masterBalance.Mast
 }
 
 func (r *repository) Update(ctx context.Context, masterBalance masterBalance.MasterBalance) error {
-	q := `UPDATE masterbalance SET fromid = $2, serviceid = $3, orderid = $4, moneyamount = $5 WHERE id = $1`
+	q := `UPDATE masterbalance SET from_id = $2, service_id = $3, order_id = $4, money_amount = $5 WHERE id = $1`
 	r.logger.Trace(fmt.Sprintf("SQL Query: %s", q))
 	_, err := r.client.Query(ctx, q, masterBalance.ID, masterBalance.FromId, masterBalance.ServiceId, masterBalance.OrderId, masterBalance.MoneyAmount)
 	if err != nil {

@@ -2,8 +2,9 @@ package main
 
 import (
 	"avitoIntershipBackend/internal/config"
-	"avitoIntershipBackend/internal/transaction"
-	serviceDB "avitoIntershipBackend/internal/transaction/db"
+	masterBalDB "avitoIntershipBackend/internal/masterBalance/db"
+	serviceDB "avitoIntershipBackend/internal/service/db"
+	transactionDB "avitoIntershipBackend/internal/transaction/db"
 	"avitoIntershipBackend/internal/user"
 	userDB "avitoIntershipBackend/internal/user/db"
 	"avitoIntershipBackend/pkg/client/postgresql"
@@ -24,41 +25,25 @@ func main() {
 
 	cfg := config.GetConfig()
 
-	logger.Info("register user handler")
-	handler := user.NewHandler(*logger)
-	handler.Register(router)
-
 	postgresSQLClient, err := postgresql.NewClient(context.Background(), 3, cfg.Storage)
 	if err != nil {
 		logger.Fatal(fmt.Errorf("can't connect to database due to error: %v", err))
 	}
 
 	userRepository := userDB.NewRepository(postgresSQLClient, logger)
-	transactionRepository := serviceDB.NewRepository(postgresSQLClient, logger)
+	transactionRepository := transactionDB.NewRepository(postgresSQLClient, logger)
+	serviceRepository := serviceDB.NewRepository(postgresSQLClient, logger)
+	masterBalRepository := masterBalDB.NewRepository(postgresSQLClient, logger)
 
-	ser := transaction.Transaction{
-		FromId:      "4",
-		ToId:        "2",
-		ForService:  "1",
-		OrderId:     "6",
-		MoneyAmount: "100",
-		Status:      "24",
+	serv := user.NewService(userRepository, masterBalRepository, transactionRepository, serviceRepository, logger)
+
+	if serv == nil {
+
 	}
 
-	transactionRepository.Create(context.Background(), &ser)
-	kek, _ := transactionRepository.FindAll(context.Background())
-	lol, _ := transactionRepository.FindOne(context.Background(), "1")
-	ser.MoneyAmount = "Lol"
-	transactionRepository.Update(context.Background(), ser)
-	transactionRepository.Delete(context.Background(), "1")
-
-	fmt.Println(kek)
-	fmt.Println(lol)
-
-	err = userRepository.Delete(context.Background(), "12")
-	if err != nil {
-		return
-	}
+	logger.Info("register user handler")
+	handler := user.NewHandler(*logger, serv)
+	handler.Register(router)
 
 	start(router, cfg)
 
