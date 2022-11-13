@@ -21,6 +21,7 @@ type BusinessLogic interface {
 	RejectMoney(ctx context.Context, balance *masterBalance.MasterBalance) error
 	Report(ctx context.Context, month string, year string) (string, error)
 	GetBalance(ctx context.Context, id string) (User, error)
+	GetUserTransactions(ctx context.Context, id string, pageNum string, sortSum string, sortDate string) ([]string, error)
 }
 
 type bisLogic struct {
@@ -313,29 +314,18 @@ func (b bisLogic) Report(ctx context.Context, month string, year string) (string
 	}
 	w.Flush()
 
-	/*for _, transaction := range *transactions {
-		idInString := strconv.Itoa(int(transaction.TransactionType))
-		if val, ok := resultMap[idInString]; ok {
-			valIn, _ := strconv.ParseFloat(transaction.AmountOfMoney, 64)
-			valCurrent, _ := strconv.ParseFloat(val, 64)
-			resultMap[idInString] = fmt.Sprintf("%f", valIn+valCurrent)
-		} else {
-			resultMap[idInString] = strconv.ParseFloat(transaction.MoneyAmount, 64)
-		}
-	}
-
-	file, _ := os.Create("/reports/report.csv")
-	defer file.Close()
-
-	w := csv.NewWriter(file)
-	w.Comma = ';'
-	for k, v := range resultMap {
-		row := []string{k, v}
-		w.Write(row)
-	}
-	w.Flush()*/
-
 	return "", nil
+}
+
+func (b bisLogic) GetUserTransactions(ctx context.Context, id string, pageNum string, sortSum string, sortDate string) ([]string, error) {
+
+	var err error
+	transactionsList := make([]transaction.Transaction, 0)
+
+	transactionsList, _ = b.repositoryTransaction.FindPageForUser(ctx, id, pageNum, sortSum, sortDate)
+	fmt.Println(transactionsList)
+
+	return nil, err
 }
 
 func NewService(repositoryUser Repository, repositoryMasterBalance masterBalance.Repository,

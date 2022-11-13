@@ -11,12 +11,13 @@ import (
 var _ handlers.Handler = &handler{}
 
 const (
-	billingURL = "/billing"
-	freezeURL  = "/moneyFreeze"
-	acceptURL  = "/moneyAccept"
-	rejectURL  = "/moneyReject"
-	userURL    = "/users/:id"
-	reportURL  = "/report/:month/:year"
+	billingURL          = "/billing"
+	freezeURL           = "/moneyFreeze"
+	acceptURL           = "/moneyAccept"
+	rejectURL           = "/moneyReject"
+	userURL             = "/users/:id"
+	userTransactionsURL = "/transactions/:userid/:pageNum/:sortSum/:sortDate"
+	reportURL           = "/report/:month/:year"
 )
 
 type handler struct {
@@ -38,6 +39,7 @@ func (h *handler) Register(router *gin.Engine) {
 	router.POST(rejectURL, h.RejectMoney)
 	router.GET(userURL, h.GetUserBalance)
 	router.GET(reportURL, h.GetReport)
+	router.GET(userTransactionsURL, h.GetUserTransactions)
 
 }
 
@@ -143,4 +145,20 @@ func (h *handler) GetReport(c *gin.Context) {
 		c.AbortWithStatus(500)
 	}
 	c.String(200, "%s", linkToReport)
+}
+
+func (h *handler) GetUserTransactions(c *gin.Context) {
+	var transactionsList string
+	var err error
+
+	id := c.Params.ByName("userid")
+	pageNum := c.Params.ByName("pageNum")
+	sortSum := c.Params.ByName("sortSum")
+	sortDate := c.Params.ByName("sortDate")
+
+	_, err = h.userService.GetUserTransactions(c, id, pageNum, sortSum, sortDate)
+	if err != nil {
+
+	}
+	c.String(200, transactionsList)
 }

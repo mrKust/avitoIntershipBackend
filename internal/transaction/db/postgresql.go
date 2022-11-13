@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/jackc/pgconn"
+	"strconv"
 )
 
 type repository struct {
@@ -105,6 +106,46 @@ func (r *repository) FindOne(ctx context.Context, id string) (transaction.Transa
 	}
 
 	return t, nil
+}
+
+func (r *repository) FindPageForUser(ctx context.Context, id, pageNum, sortSum, sortDate string) ([]transaction.Transaction, error) {
+	sumParam := "money_amount " + sortSum
+	dateParam := "date " + sortDate
+	q := `SELECT id, from_id, to_id, for_service, order_id, money_amount, status, date
+		  FROM transaction WHERE from_id = $1 OR to_id = $1
+		  ORDER BY $2, $3 OFFSET $4 LIMIT $5;`
+	r.logger.Trace(fmt.Sprintf("SQL Query: %s", q))
+
+	var pageSize uint64 = 2
+	skip, err := strconv.ParseUint(pageNum, 10, 64)
+	if err != nil {
+		return nil, err
+	}
+	skip = (skip - 1) * pageSize
+
+	rows, err := r.client.Query(ctx, q, id, sumParam, dateParam, skip, pageSize)
+	if err != nil {
+		return nil, err
+	}
+
+	transactions := make([]transaction.Transaction, 0)
+
+	for rows.Next() {
+		var t transaction.Transaction
+
+		err = rows.Scan(&t.ID, &t.FromId, &t.ToId, &t.ForService, &t.OrderId, &t.MoneyAmount, &t.Status, &t.Date)
+		if err != nil {
+			return nil, err
+		}
+
+		transactions = append(transactions, t)
+	}
+
+	if err = rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return transactions, nil
 }
 
 func (r *repository) Update(ctx context.Context, transaction transaction.Transaction) error {
