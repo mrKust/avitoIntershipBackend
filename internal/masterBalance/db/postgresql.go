@@ -76,6 +76,19 @@ func (r *repository) FindOne(ctx context.Context, id string) (masterBalance.Mast
 	return m, nil
 }
 
+func (r *repository) FindOneByParam(ctx context.Context, masterBalance *masterBalance.MasterBalance) error {
+	q := `SELECT id, from_id, service_id, order_id, money_amount FROM masterbalance WHERE from_id = $1 AND service_id = $2 AND order_id = $3 AND money_amount = $4 LIMIT 1`
+	r.logger.Trace(fmt.Sprintf("SQL Query: %s", q))
+
+	row := r.client.QueryRow(ctx, q, masterBalance.FromId, masterBalance.ServiceId, masterBalance.OrderId, masterBalance.MoneyAmount)
+	err := row.Scan(&masterBalance.ID, &masterBalance.FromId, &masterBalance.ServiceId, &masterBalance.OrderId, &masterBalance.MoneyAmount)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (r *repository) Update(ctx context.Context, masterBalance masterBalance.MasterBalance) error {
 	q := `UPDATE masterbalance SET from_id = $2, service_id = $3, order_id = $4, money_amount = $5 WHERE id = $1`
 	r.logger.Trace(fmt.Sprintf("SQL Query: %s", q))

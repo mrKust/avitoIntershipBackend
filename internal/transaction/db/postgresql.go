@@ -62,6 +62,37 @@ func (r *repository) FindAll(ctx context.Context) (t []transaction.Transaction, 
 	return transactions, nil
 }
 
+func (r *repository) FindAllForPeriod(ctx context.Context, month string, year string) (t []transaction.Transaction, err error) {
+	q := `SELECT id, for_service, money_amount FROM transaction
+		  WHERE date_part('month', date) = $1 AND date_part('year', date) = $2 
+		  AND status = 'complete';`
+	r.logger.Trace(fmt.Sprintf("SQL Query: %s", q))
+
+	rows, err := r.client.Query(ctx, q, month, year)
+	if err != nil {
+		return nil, err
+	}
+
+	transactions := make([]transaction.Transaction, 0)
+
+	for rows.Next() {
+		var t transaction.Transaction
+
+		err = rows.Scan(&t.ID, &t.ForService, &t.MoneyAmount)
+		if err != nil {
+			return nil, err
+		}
+
+		transactions = append(transactions, t)
+	}
+
+	if err = rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return transactions, nil
+}
+
 func (r *repository) FindOne(ctx context.Context, id string) (transaction.Transaction, error) {
 	q := `SELECT id, from_id, to_id, for_service, order_id, money_amount, status, date FROM transaction WHERE id = $1`
 	r.logger.Trace(fmt.Sprintf("SQL Query: %s", q))

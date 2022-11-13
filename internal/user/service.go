@@ -6,9 +6,12 @@ import (
 	"avitoIntershipBackend/internal/transaction"
 	"avitoIntershipBackend/pkg/logging"
 	"context"
+	"encoding/csv"
 	"fmt"
+	"os"
 	"strconv"
 	"strings"
+	"time"
 )
 
 type BusinessLogic interface {
@@ -16,7 +19,8 @@ type BusinessLogic interface {
 	ReserveMoney(ctx context.Context, balance *masterBalance.MasterBalance) error
 	AcceptMoney(ctx context.Context, balance *masterBalance.MasterBalance) error
 	RejectMoney(ctx context.Context, balance *masterBalance.MasterBalance) error
-	Report(ctx context.Context, month string, year string) error
+	Report(ctx context.Context, month string, year string) (string, error)
+	GetBalance(ctx context.Context, id string) (User, error)
 }
 
 type bisLogic struct {
@@ -86,7 +90,7 @@ func (b bisLogic) ReserveMoney(ctx context.Context, balance *masterBalance.Maste
 
 	if (strings.Contains(balance.MoneyAmount, "-") == true) || (strings.Contains(balance.MoneyAmount, "+") == true) {
 		err = fmt.Errorf("incorrect \"balanace\" parametr in request")
-		b.logger.Debugf("can't add money with billing due to error: %v", err)
+		b.logger.Debugf("can't reserve money for service due to error: %v", err)
 		return err
 	}
 
@@ -149,18 +153,189 @@ func (b bisLogic) ReserveMoney(ctx context.Context, balance *masterBalance.Maste
 }
 
 func (b bisLogic) AcceptMoney(ctx context.Context, balance *masterBalance.MasterBalance) error {
-	//TODO implement me
-	panic("implement me")
+	var err error
+
+	if (strings.Contains(balance.MoneyAmount, "-") == true) || (strings.Contains(balance.MoneyAmount, "+") == true) {
+		err = fmt.Errorf("incorrect \"balanace\" parametr in request")
+		b.logger.Debugf("can't accept money for service due to error: %v", err)
+		return err
+	}
+
+	err = b.repositoryMasterBalance.FindOneByParam(ctx, balance)
+
+	err = b.repositoryMasterBalance.Delete(ctx, fmt.Sprintf("%d", balance.ID))
+	if err != nil {
+		b.logger.Debugf("can't delete masterbal in db")
+		return err
+	}
+
+	serviceTmp, err := b.repositoryService.FindOne(ctx, balance.ServiceId)
+	if err != nil {
+		b.logger.Debugf("can't get service from db")
+		return err
+	}
+
+	newTransaction := transaction.Transaction{
+		FromId:      balance.FromId,
+		ToId:        "0",
+		ForService:  serviceTmp.Name,
+		OrderId:     balance.OrderId,
+		MoneyAmount: balance.MoneyAmount,
+		Status:      "complete",
+	}
+
+	err = b.repositoryTransaction.Create(ctx, &newTransaction)
+	if err != nil {
+		b.logger.Debugf("can't write action in transactions list")
+		return err
+	}
+
+	return nil
 }
 
 func (b bisLogic) RejectMoney(ctx context.Context, balance *masterBalance.MasterBalance) error {
-	//TODO implement me
-	panic("implement me")
+
+	var user User
+	var err error
+
+	if (strings.Contains(balance.MoneyAmount, "-") == true) || (strings.Contains(balance.MoneyAmount, "+") == true) {
+		err = fmt.Errorf("incorrect \"balanace\" parametr in request")
+		b.logger.Debugf("can't reject money request for service due to error: %v", err)
+		return err
+	}
+
+	err = b.repositoryMasterBalance.FindOneByParam(ctx, balance)
+	if err != nil {
+		b.logger.Debugf("can't get masterBal from db")
+		return err
+	}
+
+	user, err = b.repositoryUser.FindOne(ctx, balance.FromId)
+	if err != nil {
+		b.logger.Debugf("can't get user from db")
+		return err
+	}
+
+	tmpVal1, _ := strconv.ParseFloat(balance.MoneyAmount, 64)
+	tmpVal2, _ := strconv.ParseFloat(user.Balance, 64)
+
+	balanceAfterReject := tmpVal2 + tmpVal1
+
+	user.Balance = fmt.Sprintf("%f", balanceAfterReject)
+	err = b.repositoryUser.Update(ctx, user)
+	if err != nil {
+		b.logger.Debugf("can't update user in db")
+		return err
+	}
+
+	err = b.repositoryMasterBalance.Delete(ctx, fmt.Sprintf("%d", balance.ID))
+	if err != nil {
+		b.logger.Debugf("can't delete masterbal from db")
+		return err
+	}
+
+	serviceTmp, err := b.repositoryService.FindOne(ctx, balance.ServiceId)
+	if err != nil {
+		b.logger.Debugf("can't get service from db")
+		return err
+	}
+
+	newTransaction := transaction.Transaction{
+		FromId:      balance.FromId,
+		ToId:        "0",
+		ForService:  serviceTmp.Name,
+		OrderId:     balance.OrderId,
+		MoneyAmount: balance.MoneyAmount,
+		Status:      "canceled",
+	}
+
+	err = b.repositoryTransaction.Create(ctx, &newTransaction)
+	if err != nil {
+		b.logger.Debugf("can't write action in transactions list")
+		return err
+	}
+
+	return nil
 }
 
-func (b bisLogic) Report(ctx context.Context, month string, year string) error {
-	//TODO implement me
-	panic("implement me")
+func (b bisLogic) GetBalance(ctx context.Context, id string) (User, error) {
+	var user User
+	var err error
+
+	user, err = b.repositoryUser.FindOne(ctx, id)
+	if err != nil {
+		err = fmt.Errorf("no users with such id %s", id)
+		return User{}, err
+	}
+
+	return user, nil
+}
+
+func (b bisLogic) Report(ctx context.Context, month string, year string) (string, error) {
+
+	var err error
+	transactionsList := make([]transaction.Transaction, 0)
+
+	transactionsList, _ = b.repositoryTransaction.FindAllForPeriod(ctx, month, year)
+
+	resultMap := make(map[string]float64)
+
+	for _, transactionTmp := range transactionsList {
+		if strings.Contains(transactionTmp.ForService, "billing") {
+			continue
+		}
+		if val, ok := resultMap[transactionTmp.ForService]; ok {
+			moneyOne := val
+			moneyTwo, err := strconv.ParseFloat(transactionTmp.MoneyAmount, 64)
+			if err != nil {
+
+			}
+			resultMap[transactionTmp.ForService] = moneyOne + moneyTwo
+		} else {
+			resultMap[transactionTmp.ForService], err = strconv.ParseFloat(transactionTmp.MoneyAmount, 64)
+			if err != nil {
+
+			}
+		}
+	}
+
+	reportName := strings.ReplaceAll("./reports/report"+time.Now().Format(time.RFC822)+".csv", ":", "-")
+	file, errName := os.Create(reportName)
+	if err != nil {
+		fmt.Println(errName)
+	}
+
+	w := csv.NewWriter(file)
+	w.Comma = ';'
+	for k, v := range resultMap {
+		row := []string{k, fmt.Sprintf("%f", v)}
+		w.Write(row)
+	}
+	w.Flush()
+
+	/*for _, transaction := range *transactions {
+		idInString := strconv.Itoa(int(transaction.TransactionType))
+		if val, ok := resultMap[idInString]; ok {
+			valIn, _ := strconv.ParseFloat(transaction.AmountOfMoney, 64)
+			valCurrent, _ := strconv.ParseFloat(val, 64)
+			resultMap[idInString] = fmt.Sprintf("%f", valIn+valCurrent)
+		} else {
+			resultMap[idInString] = strconv.ParseFloat(transaction.MoneyAmount, 64)
+		}
+	}
+
+	file, _ := os.Create("/reports/report.csv")
+	defer file.Close()
+
+	w := csv.NewWriter(file)
+	w.Comma = ';'
+	for k, v := range resultMap {
+		row := []string{k, v}
+		w.Write(row)
+	}
+	w.Flush()*/
+
+	return "", nil
 }
 
 func NewService(repositoryUser Repository, repositoryMasterBalance masterBalance.Repository,

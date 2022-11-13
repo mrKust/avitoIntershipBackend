@@ -13,8 +13,10 @@ var _ handlers.Handler = &handler{}
 const (
 	billingURL = "/billing"
 	freezeURL  = "/moneyFreeze"
-	usersURL   = "/users"
+	acceptURL  = "/moneyAccept"
+	rejectURL  = "/moneyReject"
 	userURL    = "/users/:id"
+	reportURL  = "/report/:month/:year"
 )
 
 type handler struct {
@@ -32,12 +34,10 @@ func NewHandler(logger logging.Logger, serviceUser BusinessLogic) handlers.Handl
 func (h *handler) Register(router *gin.Engine) {
 	router.POST(billingURL, h.AddBilling)
 	router.POST(freezeURL, h.FreezeMoney)
-	router.GET(usersURL, h.GetList)
-	router.GET(userURL, h.GetUserByID)
-	router.POST(usersURL, h.CreateUser)
-	router.PUT(userURL, h.UpdateUser)
-	router.PATCH(usersURL, h.PartiallyUpdateUser)
-	router.DELETE(userURL, h.DeleteUser)
+	router.POST(acceptURL, h.AcceptMoney)
+	router.POST(rejectURL, h.RejectMoney)
+	router.GET(userURL, h.GetUserBalance)
+	router.GET(reportURL, h.GetReport)
 
 }
 
@@ -79,22 +79,68 @@ func (h *handler) FreezeMoney(c *gin.Context) {
 	c.String(200, "reserved bill id %d", masterReq.ID)
 }
 
-func (h *handler) GetList(c *gin.Context) {
-	c.AbortWithStatus(404)
+func (h *handler) AcceptMoney(c *gin.Context) {
+	var masterReq masterBalance.MasterBalance
+	var err error
+	if err = c.BindJSON(&masterReq); err != nil {
+		c.AbortWithStatus(500)
+	}
+	err = h.userService.AcceptMoney(c, &masterReq)
+	if err != nil {
+		if strings.Contains(err.Error(), "incorrect \"balanace\" parametr in request") {
+			c.AbortWithStatus(400)
+
+		}
+		c.AbortWithStatus(500)
+
+	}
+	c.Status(200)
 }
 
-func (h *handler) CreateUser(c *gin.Context) {
-	c.AbortWithStatus(404)
+func (h *handler) RejectMoney(c *gin.Context) {
+	var masterReq masterBalance.MasterBalance
+	var err error
+	if err = c.BindJSON(&masterReq); err != nil {
+		c.AbortWithStatus(500)
+	}
+	err = h.userService.RejectMoney(c, &masterReq)
+	if err != nil {
+		if strings.Contains(err.Error(), "incorrect \"balanace\" parametr in request") {
+			c.AbortWithStatus(400)
+
+		}
+		c.AbortWithStatus(500)
+
+	}
+	c.Status(200)
 }
-func (h *handler) GetUserByID(c *gin.Context) {
-	c.AbortWithStatus(404)
+
+func (h *handler) GetUserBalance(c *gin.Context) {
+	var user User
+	var err error
+
+	id := c.Params.ByName("id")
+
+	user, err = h.userService.GetBalance(c, id)
+	if err != nil {
+		if strings.Contains(err.Error(), "no users with such id") {
+			c.AbortWithStatus(404)
+		}
+		c.AbortWithStatus(500)
+	}
+	c.JSON(200, user)
 }
-func (h *handler) UpdateUser(c *gin.Context) {
-	c.AbortWithStatus(404)
-}
-func (h *handler) PartiallyUpdateUser(c *gin.Context) {
-	c.AbortWithStatus(404)
-}
-func (h *handler) DeleteUser(c *gin.Context) {
-	c.AbortWithStatus(404)
+
+func (h *handler) GetReport(c *gin.Context) {
+	var linkToReport string
+	var err error
+
+	month := c.Params.ByName("month")
+	year := c.Params.ByName("year")
+
+	linkToReport, err = h.userService.Report(c, month, year)
+	if err != nil {
+		c.AbortWithStatus(500)
+	}
+	c.String(200, "%s", linkToReport)
 }
