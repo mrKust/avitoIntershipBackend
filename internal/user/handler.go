@@ -142,6 +142,9 @@ func (h *handler) GetReport(c *gin.Context) {
 
 	linkToReport, err = h.userService.Report(c, month, year)
 	if err != nil {
+		if strings.Contains(err.Error(), "no transactions for this period") {
+			c.AbortWithStatus(404)
+		}
 		c.AbortWithStatus(500)
 	}
 	c.String(200, "%s", linkToReport)
@@ -156,9 +159,16 @@ func (h *handler) GetUserTransactions(c *gin.Context) {
 	sortSum := c.Params.ByName("sortSum")
 	sortDate := c.Params.ByName("sortDate")
 
-	_, err = h.userService.GetUserTransactions(c, id, pageNum, sortSum, sortDate)
+	transactionsList, err = h.userService.GetUserTransactions(c, id, pageNum, sortSum, sortDate)
 	if err != nil {
-
+		if strings.Contains(err.Error(), "no transactions for user") {
+			c.AbortWithStatus(404)
+		}
+		if strings.Contains(err.Error(), "incorrect input parametrs") ||
+			strings.Contains(err.Error(), "parametrs equal 0") {
+			c.AbortWithStatus(400)
+		}
+		c.AbortWithStatus(500)
 	}
-	c.String(200, transactionsList)
+	c.Data(200, "text/html; charset=utf-8", []byte(transactionsList))
 }

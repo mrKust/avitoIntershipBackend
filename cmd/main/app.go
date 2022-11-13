@@ -35,11 +35,8 @@ func main() {
 	serviceRepository := serviceDB.NewRepository(postgresSQLClient, logger)
 	masterBalRepository := masterBalDB.NewRepository(postgresSQLClient, logger)
 
+	logger.Info("create service and repositories")
 	serv := user.NewService(userRepository, masterBalRepository, transactionRepository, serviceRepository, logger)
-
-	if serv == nil {
-
-	}
 
 	logger.Info("register user handler")
 	handler := user.NewHandler(*logger, serv)

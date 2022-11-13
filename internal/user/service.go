@@ -1,6 +1,7 @@
 package user
 
 import (
+	"avitoIntershipBackend/internal/config"
 	"avitoIntershipBackend/internal/masterBalance"
 	"avitoIntershipBackend/internal/service"
 	"avitoIntershipBackend/internal/transaction"
@@ -21,7 +22,7 @@ type BusinessLogic interface {
 	RejectMoney(ctx context.Context, balance *masterBalance.MasterBalance) error
 	Report(ctx context.Context, month string, year string) (string, error)
 	GetBalance(ctx context.Context, id string) (User, error)
-	GetUserTransactions(ctx context.Context, id string, pageNum string, sortSum string, sortDate string) ([]string, error)
+	GetUserTransactions(ctx context.Context, id string, pageNum string, sortSum string, sortDate string) (string, error)
 }
 
 type bisLogic struct {
@@ -277,7 +278,17 @@ func (b bisLogic) Report(ctx context.Context, month string, year string) (string
 	var err error
 	transactionsList := make([]transaction.Transaction, 0)
 
-	transactionsList, _ = b.repositoryTransaction.FindAllForPeriod(ctx, month, year)
+	transactionsList, err = b.repositoryTransaction.FindAllForPeriod(ctx, month, year)
+	if err != nil {
+		err = fmt.Errorf("can't get transactions")
+		return "", err
+	}
+
+	if len(transactionsList) == 0 {
+		b.logger.Debugf("transactions for choosen period didn't found")
+		err = fmt.Errorf("no transactions for this period")
+		return "", err
+	}
 
 	resultMap := make(map[string]float64)
 
@@ -289,13 +300,15 @@ func (b bisLogic) Report(ctx context.Context, month string, year string) (string
 			moneyOne := val
 			moneyTwo, err := strconv.ParseFloat(transactionTmp.MoneyAmount, 64)
 			if err != nil {
-
+				b.logger.Debugf("can't convert money to float due to error: %v", err)
+				return "", err
 			}
 			resultMap[transactionTmp.ForService] = moneyOne + moneyTwo
 		} else {
 			resultMap[transactionTmp.ForService], err = strconv.ParseFloat(transactionTmp.MoneyAmount, 64)
 			if err != nil {
-
+				b.logger.Debugf("can't convert money to float due to error: %v", err)
+				return "", err
 			}
 		}
 	}
@@ -303,6 +316,7 @@ func (b bisLogic) Report(ctx context.Context, month string, year string) (string
 	reportName := strings.ReplaceAll("./reports/report"+time.Now().Format(time.RFC822)+".csv", ":", "-")
 	file, errName := os.Create(reportName)
 	if err != nil {
+		b.logger.Debugf("can't create file due to error: %v", err)
 		fmt.Println(errName)
 	}
 
@@ -310,22 +324,76 @@ func (b bisLogic) Report(ctx context.Context, month string, year string) (string
 	w.Comma = ';'
 	for k, v := range resultMap {
 		row := []string{k, fmt.Sprintf("%f", v)}
-		w.Write(row)
+		err = w.Write(row)
+		if err != nil {
+			b.logger.Debugf("can't write data to file due to error %v", err)
+			os.Remove(reportName)
+			return "", err
+		}
 	}
 	w.Flush()
+	err = file.Close()
+	if err != nil {
+		b.logger.Debugf("can't close report's file")
+		return "", err
+	}
+	resultString := fmt.Sprintf("%s:%s%s", config.GetConfig().Listen.BindIP, config.GetConfig().Listen.Port, reportName[1:])
 
-	return "", nil
+	return resultString, nil
 }
 
-func (b bisLogic) GetUserTransactions(ctx context.Context, id string, pageNum string, sortSum string, sortDate string) ([]string, error) {
+func (b bisLogic) GetUserTransactions(ctx context.Context, id string, pageNum string, sortSum string, sortDate string) (string, error) {
 
 	var err error
 	transactionsList := make([]transaction.Transaction, 0)
 
-	transactionsList, _ = b.repositoryTransaction.FindPageForUser(ctx, id, pageNum, sortSum, sortDate)
-	fmt.Println(transactionsList)
+	if !strings.Contains(sortSum, "desc") && !strings.Contains(sortSum, "asc") {
+		b.logger.Debugf("incorect parametr sortSum")
+		err = fmt.Errorf("incorrect input parametrs")
+		return "", err
+	}
 
-	return nil, err
+	if !strings.Contains(sortDate, "desc") && !strings.Contains(sortDate, "asc") {
+		b.logger.Debugf("incorect parametr sortDate")
+		err = fmt.Errorf("incorrect input parametrs")
+		return "", err
+	}
+
+	idInt, err := strconv.ParseInt(id, 10, 64)
+	if err != nil {
+		b.logger.Debugf("incorect parametr id")
+		err = fmt.Errorf("incorrect input parametrs")
+		return "", err
+	}
+	pageNumInt, err := strconv.ParseInt(pageNum, 10, 64)
+	if err != nil {
+		b.logger.Debugf("incorect parametr pageNum")
+		err = fmt.Errorf("incorrect input parametrs")
+		return "", err
+	}
+
+	if (idInt < 0) || (pageNumInt <= 0) {
+		b.logger.Debugf("id and pageNum must be positive (>0)")
+		err = fmt.Errorf("parametrs equal 0")
+		return "", err
+	}
+
+	transactionsList, err = b.repositoryTransaction.FindPageForUser(ctx, id, pageNum, sortSum, sortDate)
+	if err != nil {
+		b.logger.Debugf("can't get page of transactions of user due to error %v", err)
+		return "", err
+	}
+	if len(transactionsList) == 0 {
+		return "", fmt.Errorf("no transactions for user")
+	}
+
+	var resultString string
+	for _, transactionTmp := range transactionsList {
+		date := fmt.Sprint(transactionTmp.Date)
+		resultString = resultString + fmt.Sprintf("user pay %s for %s at %s", transactionTmp.MoneyAmount, transactionTmp.ForService, date) + "\n"
+	}
+
+	return resultString, err
 }
 
 func NewService(repositoryUser Repository, repositoryMasterBalance masterBalance.Repository,

@@ -64,9 +64,7 @@ func (r *repository) FindAll(ctx context.Context) (t []transaction.Transaction, 
 }
 
 func (r *repository) FindAllForPeriod(ctx context.Context, month string, year string) (t []transaction.Transaction, err error) {
-	q := `SELECT id, for_service, money_amount FROM transaction
-		  WHERE date_part('month', date) = $1 AND date_part('year', date) = $2 
-		  AND status = 'complete';`
+	q := `SELECT id, for_service, money_amount FROM transaction WHERE date_part('month', date) = $1 AND date_part('year', date) = $2 AND status = 'complete';`
 	r.logger.Trace(fmt.Sprintf("SQL Query: %s", q))
 
 	rows, err := r.client.Query(ctx, q, month, year)
@@ -111,9 +109,7 @@ func (r *repository) FindOne(ctx context.Context, id string) (transaction.Transa
 func (r *repository) FindPageForUser(ctx context.Context, id, pageNum, sortSum, sortDate string) ([]transaction.Transaction, error) {
 	sumParam := "money_amount " + sortSum
 	dateParam := "date " + sortDate
-	q := `SELECT id, from_id, to_id, for_service, order_id, money_amount, status, date
-		  FROM transaction WHERE from_id = $1 OR to_id = $1
-		  ORDER BY $2, $3 OFFSET $4 LIMIT $5;`
+	q := `SELECT id, from_id, to_id, for_service, order_id, money_amount, status, date FROM transaction WHERE from_id = $1 OR to_id = $1 ORDER BY $2, $3 OFFSET $4 LIMIT $5;`
 	r.logger.Trace(fmt.Sprintf("SQL Query: %s", q))
 
 	var pageSize uint64 = 2
