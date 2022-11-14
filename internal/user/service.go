@@ -199,7 +199,7 @@ func (b bisLogic) RejectMoney(ctx context.Context, balance *masterBalance.Master
 	var err error
 
 	if (strings.Contains(balance.MoneyAmount, "-") == true) || (strings.Contains(balance.MoneyAmount, "+") == true) {
-		err = fmt.Errorf("incorrect \"balanace\" parametr in request")
+		err = fmt.Errorf("incorrect balanace parametr in request")
 		b.logger.Debugf("can't reject money request for service due to error: %v", err)
 		return err
 	}

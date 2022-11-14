@@ -103,7 +103,7 @@ func (h *handler) FreezeMoney(c *gin.Context) {
 
 		}
 		if strings.Contains(err.Error(), "lack of money for service is") {
-			c.JSON(204, gin.H{"err message": err.Error()})
+			c.JSON(404, gin.H{"err message": err.Error()})
 			return
 
 		}
