@@ -203,48 +203,34 @@ ALTER TABLE ONLY public."user" ALTER COLUMN id SET DEFAULT nextval('public.user_
 -- Data for Name: masterbalance; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
+COPY public.masterbalance (id, from_id, service_id, order_id, money_amount) FROM stdin;
+\.
 
 
 --
 -- Data for Name: service; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
-INSERT INTO public.service (id, name, price) VALUES (2, 'haircut', '15.0');
+COPY public.service (id, name, price) FROM stdin;
+2	haircut	15.0
+3	training	100.25
+\.
 
 
 --
 -- Data for Name: transaction; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
-INSERT INTO public.transaction (id, from_id, to_id, for_service, order_id, money_amount, status, date) VALUES (2, '4', '2', '1', '6', '100', '24', '2022-11-11');
-INSERT INTO public.transaction (id, from_id, to_id, for_service, order_id, money_amount, status, date) VALUES (3, '0', '4', 'billing', '-', '2.0', 'complete', '2022-11-12');
-INSERT INTO public.transaction (id, from_id, to_id, for_service, order_id, money_amount, status, date) VALUES (4, '0', '4', 'billing', '-', '2.5', 'complete', '2022-11-12');
-INSERT INTO public.transaction (id, from_id, to_id, for_service, order_id, money_amount, status, date) VALUES (6, '4', '0', 'haircut', '4', '100', 'freeze', '2022-11-12');
-INSERT INTO public.transaction (id, from_id, to_id, for_service, order_id, money_amount, status, date) VALUES (7, '4', '0', 'haircut', '4', '+2', 'freeze', '2022-11-12');
-INSERT INTO public.transaction (id, from_id, to_id, for_service, order_id, money_amount, status, date) VALUES (8, '4', '0', 'haircut', '4', '+2', 'freeze', '2022-11-12');
-INSERT INTO public.transaction (id, from_id, to_id, for_service, order_id, money_amount, status, date) VALUES (9, '4', '0', 'haircut', '4', '2', 'freeze', '2022-11-12');
-INSERT INTO public.transaction (id, from_id, to_id, for_service, order_id, money_amount, status, date) VALUES (10, '4', '0', 'haircut', '4', '2', 'freeze', '2022-11-12');
-INSERT INTO public.transaction (id, from_id, to_id, for_service, order_id, money_amount, status, date) VALUES (13, '2', '0', 'haircut', '4', '4', 'complete', '2022-11-13');
-INSERT INTO public.transaction (id, from_id, to_id, for_service, order_id, money_amount, status, date) VALUES (16, '10', '0', 'haircut', '4', '2', 'canceled', '2021-11-13');
-INSERT INTO public.transaction (id, from_id, to_id, for_service, order_id, money_amount, status, date) VALUES (14, '10', '0', 'haircut', '4', '2', 'complete', '2021-11-13');
-INSERT INTO public.transaction (id, from_id, to_id, for_service, order_id, money_amount, status, date) VALUES (11, '4', '0', 'haircut', '4', '2', 'complete', '2021-11-13');
-INSERT INTO public.transaction (id, from_id, to_id, for_service, order_id, money_amount, status, date) VALUES (5, '0', '4', 'billing', '-', '1006.500000', 'complete', '2021-11-12');
-INSERT INTO public.transaction (id, from_id, to_id, for_service, order_id, money_amount, status, date) VALUES (12, '4', '0', 'haircut', '4', '2', 'complete', '2021-11-13');
-INSERT INTO public.transaction (id, from_id, to_id, for_service, order_id, money_amount, status, date) VALUES (15, '10', '0', 'haircut', '4', '4', 'freeze', '2022-11-13');
+COPY public.transaction (id, from_id, to_id, for_service, order_id, money_amount, status, date) FROM stdin;
+\.
 
 
 --
 -- Data for Name: user; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
-INSERT INTO public."user" (id, balance) VALUES (5, '1000');
-INSERT INTO public."user" (id, balance) VALUES (6, '1000');
-INSERT INTO public."user" (id, balance) VALUES (7, '1000');
-INSERT INTO public."user" (id, balance) VALUES (8, '1000');
-INSERT INTO public."user" (id, balance) VALUES (9, '1000');
-INSERT INTO public."user" (id, balance) VALUES (11, '10');
-INSERT INTO public."user" (id, balance) VALUES (4, '796.500000');
-INSERT INTO public."user" (id, balance) VALUES (10, '10.000000');
+COPY public."user" (id, balance) FROM stdin;
+\.
 
 
 --
@@ -258,7 +244,7 @@ SELECT pg_catalog.setval('public.masterbalance_id_seq', 2, true);
 -- Name: service_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.service_id_seq', 2, true);
+SELECT pg_catalog.setval('public.service_id_seq', 3, true);
 
 
 --
