@@ -7,6 +7,6 @@ ENV GOPATH=/
 COPY ./ ./
 
 RUN go mod download
-RUN go build -o avitoIntershipBackend ./cmd/main/app.go
+RUN go build -o avitoIntershipBackend ./cmd/main/main.go
 
 CMD ["./avitoIntershipBackend"]
