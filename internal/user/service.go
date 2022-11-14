@@ -14,6 +14,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -34,6 +35,7 @@ type bisLogic struct {
 	repositoryService       service.Repository
 	logger                  *logging.Logger
 	conn                    postgresql.Client
+	mutex                   *sync.Mutex
 }
 
 func (b bisLogic) Billing(ctx context.Context, user *User) error {
@@ -46,6 +48,9 @@ func (b bisLogic) Billing(ctx context.Context, user *User) error {
 		return err
 	}
 
+	b.mutex.Lock()
+	defer b.mutex.Unlock()
+	b.logger.Debug("read val 1")
 	userInDB, err = b.repositoryUser.FindOne(ctx, fmt.Sprintf("%d", user.ID))
 	if err != nil {
 		newUser := User{Balance: user.Balance}
@@ -62,6 +67,7 @@ func (b bisLogic) Billing(ctx context.Context, user *User) error {
 
 	tmpVal2, _ := strconv.ParseFloat(userInDB.Balance, 64)
 
+	b.logger.Debug("count balance 2")
 	userInDB.Balance = fmt.Sprintf("%f", tmpVal1+tmpVal2)
 	user.Balance = userInDB.Balance
 
@@ -71,6 +77,7 @@ func (b bisLogic) Billing(ctx context.Context, user *User) error {
 		return errTx
 	}
 
+	b.logger.Debug("update value in db 3")
 	err = b.repositoryUser.Update(ctx, userInDB)
 
 	if err != nil {
@@ -109,6 +116,7 @@ func (b bisLogic) ReserveMoney(ctx context.Context, balance *masterBalance.Maste
 		return err
 	}
 
+	b.mutex.Lock()
 	user, err = b.repositoryUser.FindOne(ctx, balance.FromId)
 	if err != nil {
 		b.logger.Debugf("can't get user from db")
@@ -174,6 +182,7 @@ func (b bisLogic) ReserveMoney(ctx context.Context, balance *masterBalance.Maste
 		return err
 	}
 	tx.Commit(context.Background())
+	b.mutex.Unlock()
 
 	return nil
 }
@@ -187,6 +196,7 @@ func (b bisLogic) AcceptMoney(ctx context.Context, balance *masterBalance.Master
 		return err
 	}
 
+	b.mutex.Lock()
 	err = b.repositoryMasterBalance.FindOneByParam(ctx, balance)
 
 	if err != nil {
@@ -230,6 +240,7 @@ func (b bisLogic) AcceptMoney(ctx context.Context, balance *masterBalance.Master
 		return err
 	}
 	tx.Commit(context.Background())
+	b.mutex.Unlock()
 
 	return nil
 }
@@ -245,6 +256,7 @@ func (b bisLogic) RejectMoney(ctx context.Context, balance *masterBalance.Master
 		return err
 	}
 
+	b.mutex.Lock()
 	err = b.repositoryMasterBalance.FindOneByParam(ctx, balance)
 	if err != nil {
 		b.logger.Debugf("can't get masterBal from db")
@@ -307,6 +319,7 @@ func (b bisLogic) RejectMoney(ctx context.Context, balance *masterBalance.Master
 		return err
 	}
 	tx.Commit(context.Background())
+	b.mutex.Unlock()
 
 	return nil
 }
@@ -450,7 +463,7 @@ func (b bisLogic) GetUserTransactions(ctx context.Context, id string, pageNum st
 
 func NewService(repositoryUser Repository, repositoryMasterBalance masterBalance.Repository,
 	repositoryTransaction transaction.Repository, repositoryService service.Repository,
-	logger *logging.Logger, conn postgresql.Client) BusinessLogic {
+	logger *logging.Logger, conn postgresql.Client, mutex *sync.Mutex) BusinessLogic {
 	return &bisLogic{
 		repositoryUser:          repositoryUser,
 		repositoryMasterBalance: repositoryMasterBalance,
@@ -458,5 +471,6 @@ func NewService(repositoryUser Repository, repositoryMasterBalance masterBalance
 		repositoryService:       repositoryService,
 		logger:                  logger,
 		conn:                    conn,
+		mutex:                   mutex,
 	}
 }

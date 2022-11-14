@@ -17,6 +17,7 @@ import (
 	ginSwagger "github.com/swaggo/gin-swagger"
 	"net"
 	"net/http"
+	"sync"
 	"time"
 )
 
@@ -47,8 +48,9 @@ func main() {
 	masterBalRepository := masterBalDB.NewRepository(postgresSQLClient, logger)
 
 	logger.Info("create service")
+	var mutex sync.Mutex
 	serv := user.NewService(userRepository, masterBalRepository, transactionRepository,
-		serviceRepository, logger, postgresSQLClient)
+		serviceRepository, logger, postgresSQLClient, &mutex)
 
 	logger.Info("register user handler")
 	handler := user.NewHandler(*logger, serv)

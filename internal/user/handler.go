@@ -198,7 +198,7 @@ func (h *handler) GetUserBalance(c *gin.Context) {
 		c.JSON(500, gin.H{"err message": err.Error()})
 		return
 	}
-	c.JSON(200, user)
+	c.JSON(202, user)
 }
 
 // GetReport godoc
