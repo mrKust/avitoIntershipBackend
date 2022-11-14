@@ -4,6 +4,7 @@ import (
 	"avitoIntershipBackend/internal/handlers"
 	"avitoIntershipBackend/internal/masterBalance"
 	"avitoIntershipBackend/pkg/logging"
+	"fmt"
 	"github.com/gin-gonic/gin"
 	_ "github.com/swaggo/swag/example/celler/httputil"
 	_ "github.com/swaggo/swag/example/celler/model"
@@ -60,14 +61,17 @@ func (h *handler) AddBilling(c *gin.Context) {
 	var user User
 	var err error
 	if err = c.BindJSON(&user); err != nil {
-		c.AbortWithStatus(500)
+		c.JSON(500, gin.H{"err message": err.Error()})
+		return
 	}
 	err = h.userService.Billing(c, &user)
 	if err != nil {
-		if strings.Contains(err.Error(), "incorrect \"balanace\" parametr in request") {
-			c.AbortWithStatus(400)
+		if strings.Contains(err.Error(), "incorrect balanace parametr in request") {
+			c.JSON(400, gin.H{"err message": err.Error()})
+			return
 		}
-		c.AbortWithStatus(500)
+		c.JSON(500, gin.H{"err message": err.Error()})
+		return
 	}
 	c.JSON(200, user)
 }
@@ -77,7 +81,7 @@ func (h *handler) AddBilling(c *gin.Context) {
 // @Description  Reserves money from user balance to special master account
 // @Tags         accounts, reserve
 // @Accept       json
-// @Produce      text
+// @Produce      json
 // @Param        from_id service_id order_id money_amount string "Master balance request"
 // @Success      200  {string}
 // @Failure		 204  {object}  httputil.HTTPError
@@ -88,22 +92,26 @@ func (h *handler) FreezeMoney(c *gin.Context) {
 	var masterReq masterBalance.MasterBalance
 	var err error
 	if err = c.BindJSON(&masterReq); err != nil {
-		c.AbortWithStatus(500)
+		c.JSON(500, gin.H{"err message": err.Error()})
+		return
 	}
 	err = h.userService.ReserveMoney(c, &masterReq)
 	if err != nil {
-		if strings.Contains(err.Error(), "incorrect \"balanace\" parametr in request") {
-			c.AbortWithStatus(400)
+		if strings.Contains(err.Error(), "incorrect balanace parametr in request") {
+			c.JSON(400, gin.H{"err message": err.Error()})
+			return
 
 		}
 		if strings.Contains(err.Error(), "lack of money for service is") {
-			c.AbortWithStatus(204)
+			c.JSON(204, gin.H{"err message": err.Error()})
+			return
 
 		}
-		c.AbortWithStatus(500)
+		c.JSON(500, gin.H{"err message": err.Error()})
+		return
 
 	}
-	c.String(200, "reserved bill id %d", masterReq.ID)
+	c.JSON(200, gin.H{"res message :": fmt.Sprintf("reserved bill id %d", masterReq.ID)})
 }
 
 // AcceptMoney godoc
@@ -111,7 +119,7 @@ func (h *handler) FreezeMoney(c *gin.Context) {
 // @Description  Accept money from master balance when service is done
 // @Tags         accounts, reserve
 // @Accept       json
-// @Produce      text
+// @Produce      json
 // @Param        from_id service_id order_id money_amount string "Master balance request"
 // @Success      200  {object}
 // @Failure      400  {object}  httputil.HTTPError
@@ -121,15 +129,17 @@ func (h *handler) AcceptMoney(c *gin.Context) {
 	var masterReq masterBalance.MasterBalance
 	var err error
 	if err = c.BindJSON(&masterReq); err != nil {
-		c.AbortWithStatus(500)
+		c.JSON(500, gin.H{"err message": err.Error()})
+		return
 	}
 	err = h.userService.AcceptMoney(c, &masterReq)
 	if err != nil {
-		if strings.Contains(err.Error(), "incorrect \"balanace\" parametr in request") {
-			c.AbortWithStatus(400)
-
+		if strings.Contains(err.Error(), "incorrect balanace parametr in request") {
+			c.JSON(400, gin.H{"err message": err.Error()})
+			return
 		}
-		c.AbortWithStatus(500)
+		c.JSON(500, gin.H{"err message": err.Error()})
+		return
 
 	}
 	c.Status(200)
@@ -140,7 +150,7 @@ func (h *handler) AcceptMoney(c *gin.Context) {
 // @Description  Return money to user when payment for service is rejected
 // @Tags         accounts, reserve, reject
 // @Accept       json
-// @Produce      text
+// @Produce      json
 // @Param        from_id service_id order_id money_amount string "Master balance request"
 // @Success      200  {object}
 // @Failure      400  {object}  httputil.HTTPError
@@ -150,18 +160,19 @@ func (h *handler) RejectMoney(c *gin.Context) {
 	var masterReq masterBalance.MasterBalance
 	var err error
 	if err = c.BindJSON(&masterReq); err != nil {
-		c.AbortWithStatus(500)
+		c.JSON(500, gin.H{"err message": err.Error()})
+		return
 	}
 	err = h.userService.RejectMoney(c, &masterReq)
 	if err != nil {
-		if strings.Contains(err.Error(), "incorrect \"balanace\" parametr in request") {
-			c.AbortWithStatus(400)
-
+		if strings.Contains(err.Error(), "incorrect balanace parametr in request") {
+			c.JSON(400, gin.H{"err message": err.Error()})
+			return
 		}
-		c.AbortWithStatus(500)
-
+		c.JSON(500, gin.H{"err message": err.Error()})
+		return
 	}
-	c.Status(200)
+	c.JSON(200, gin.H{"res message": "transaction canceled"})
 }
 
 // GetUserBalance godoc
@@ -184,9 +195,11 @@ func (h *handler) GetUserBalance(c *gin.Context) {
 	user, err = h.userService.GetBalance(c, id)
 	if err != nil {
 		if strings.Contains(err.Error(), "no users with such id") {
-			c.AbortWithStatus(404)
+			c.JSON(404, gin.H{"err message": err.Error()})
+			return
 		}
-		c.AbortWithStatus(500)
+		c.JSON(500, gin.H{"err message": err.Error()})
+		return
 	}
 	c.JSON(200, user)
 }
@@ -196,7 +209,7 @@ func (h *handler) GetUserBalance(c *gin.Context) {
 // @Description  Return link to report.csv file with money for every service
 // @Tags         accounts, balance, report
 // @Accept       json
-// @Produce      text
+// @Produce      json
 // @Param        month year     string
 // @Success      200  {object}  model.User
 // @Failure      404  {object}  httputil.HTTPError
@@ -212,11 +225,13 @@ func (h *handler) GetReport(c *gin.Context) {
 	linkToReport, err = h.userService.Report(c, month, year)
 	if err != nil {
 		if strings.Contains(err.Error(), "no transactions for this period") {
-			c.AbortWithStatus(404)
+			c.JSON(404, gin.H{"err message": err.Error()})
+			return
 		}
-		c.AbortWithStatus(500)
+		c.JSON(500, gin.H{"err message": err.Error()})
+		return
 	}
-	c.String(200, "%s", linkToReport)
+	c.JSON(200, gin.H{"link to report": linkToReport})
 }
 
 // GetUserTransactions godoc
@@ -224,7 +239,7 @@ func (h *handler) GetReport(c *gin.Context) {
 // @Description  Return text with history of transactions
 // @Tags         accounts, balance
 // @Accept       json
-// @Produce      text
+// @Produce      json
 // @Param        userid pageNumber sortSum sortDate      string
 // @Success      200  {object}  model.User
 // @Failure      404  {object}  httputil.HTTPError
@@ -232,7 +247,7 @@ func (h *handler) GetReport(c *gin.Context) {
 // @Failure      500  {object}  httputil.HTTPError
 // @Router       /transactions/:userid/:pageNum/:sortSum/:sortDate [get]
 func (h *handler) GetUserTransactions(c *gin.Context) {
-	var transactionsList string
+	var transactionsList []string
 	var err error
 
 	id := c.Params.ByName("userid")
@@ -243,13 +258,16 @@ func (h *handler) GetUserTransactions(c *gin.Context) {
 	transactionsList, err = h.userService.GetUserTransactions(c, id, pageNum, sortSum, sortDate)
 	if err != nil {
 		if strings.Contains(err.Error(), "no transactions for user") {
-			c.AbortWithStatus(404)
+			c.JSON(404, gin.H{"err message": err.Error()})
+			return
 		}
 		if strings.Contains(err.Error(), "incorrect input parametrs") ||
 			strings.Contains(err.Error(), "parametrs equal 0") {
-			c.AbortWithStatus(400)
+			c.JSON(400, gin.H{"err message": err.Error()})
+			return
 		}
-		c.AbortWithStatus(500)
+		c.JSON(500, gin.H{"err message": err.Error()})
+		return
 	}
-	c.Data(200, "text/html; charset=utf-8", []byte(transactionsList))
+	c.JSON(200, transactionsList)
 }

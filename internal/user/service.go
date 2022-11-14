@@ -22,7 +22,7 @@ type BusinessLogic interface {
 	RejectMoney(ctx context.Context, balance *masterBalance.MasterBalance) error
 	Report(ctx context.Context, month string, year string) (string, error)
 	GetBalance(ctx context.Context, id string) (User, error)
-	GetUserTransactions(ctx context.Context, id string, pageNum string, sortSum string, sortDate string) (string, error)
+	GetUserTransactions(ctx context.Context, id string, pageNum string, sortSum string, sortDate string) ([]string, error)
 }
 
 type bisLogic struct {
@@ -36,20 +36,18 @@ type bisLogic struct {
 func (b bisLogic) Billing(ctx context.Context, user *User) error {
 	var userInDB User
 	var err error
+
+	if (strings.Contains(user.Balance, "-") == true) || (strings.Contains(user.Balance, "+") == true) {
+		err = fmt.Errorf("incorrect balanace parametr in request")
+		b.logger.Debugf("can't add money with billing due to error: %v", err)
+		return err
+	}
+
 	userInDB, err = b.repositoryUser.FindOne(ctx, fmt.Sprintf("%d", user.ID))
 	if err != nil {
-		if err.Error() != "rows not found" {
-			return err
-		}
 		newUser := User{Balance: user.Balance}
 		b.repositoryUser.Create(ctx, &newUser)
 		return nil
-	}
-
-	if (strings.Contains(user.Balance, "-") == true) || (strings.Contains(user.Balance, "+") == true) {
-		err = fmt.Errorf("incorrect \"balanace\" parametr in request")
-		b.logger.Debugf("can't add money with billing due to error: %v", err)
-		return err
 	}
 
 	tmpVal1, convertErr := strconv.ParseFloat(user.Balance, 64)
@@ -91,7 +89,7 @@ func (b bisLogic) ReserveMoney(ctx context.Context, balance *masterBalance.Maste
 	var err error
 
 	if (strings.Contains(balance.MoneyAmount, "-") == true) || (strings.Contains(balance.MoneyAmount, "+") == true) {
-		err = fmt.Errorf("incorrect \"balanace\" parametr in request")
+		err = fmt.Errorf("incorrect balanace parametr in request")
 		b.logger.Debugf("can't reserve money for service due to error: %v", err)
 		return err
 	}
@@ -158,7 +156,7 @@ func (b bisLogic) AcceptMoney(ctx context.Context, balance *masterBalance.Master
 	var err error
 
 	if (strings.Contains(balance.MoneyAmount, "-") == true) || (strings.Contains(balance.MoneyAmount, "+") == true) {
-		err = fmt.Errorf("incorrect \"balanace\" parametr in request")
+		err = fmt.Errorf("incorrect balanace parametr in request")
 		b.logger.Debugf("can't accept money for service due to error: %v", err)
 		return err
 	}
@@ -342,7 +340,7 @@ func (b bisLogic) Report(ctx context.Context, month string, year string) (string
 	return resultString, nil
 }
 
-func (b bisLogic) GetUserTransactions(ctx context.Context, id string, pageNum string, sortSum string, sortDate string) (string, error) {
+func (b bisLogic) GetUserTransactions(ctx context.Context, id string, pageNum string, sortSum string, sortDate string) ([]string, error) {
 
 	var err error
 	transactionsList := make([]transaction.Transaction, 0)
@@ -350,47 +348,48 @@ func (b bisLogic) GetUserTransactions(ctx context.Context, id string, pageNum st
 	if !strings.Contains(sortSum, "desc") && !strings.Contains(sortSum, "asc") {
 		b.logger.Debugf("incorect parametr sortSum")
 		err = fmt.Errorf("incorrect input parametrs")
-		return "", err
+		return nil, err
 	}
 
 	if !strings.Contains(sortDate, "desc") && !strings.Contains(sortDate, "asc") {
 		b.logger.Debugf("incorect parametr sortDate")
 		err = fmt.Errorf("incorrect input parametrs")
-		return "", err
+		return nil, err
 	}
 
 	idInt, err := strconv.ParseInt(id, 10, 64)
 	if err != nil {
 		b.logger.Debugf("incorect parametr id")
 		err = fmt.Errorf("incorrect input parametrs")
-		return "", err
+		return nil, err
 	}
 	pageNumInt, err := strconv.ParseInt(pageNum, 10, 64)
 	if err != nil {
 		b.logger.Debugf("incorect parametr pageNum")
 		err = fmt.Errorf("incorrect input parametrs")
-		return "", err
+		return nil, err
 	}
 
 	if (idInt < 0) || (pageNumInt <= 0) {
 		b.logger.Debugf("id and pageNum must be positive (>0)")
 		err = fmt.Errorf("parametrs equal 0")
-		return "", err
+		return nil, err
 	}
 
 	transactionsList, err = b.repositoryTransaction.FindPageForUser(ctx, id, pageNum, sortSum, sortDate)
 	if err != nil {
 		b.logger.Debugf("can't get page of transactions of user due to error %v", err)
-		return "", err
+		return nil, err
 	}
 	if len(transactionsList) == 0 {
-		return "", fmt.Errorf("no transactions for user")
+		return nil, fmt.Errorf("no transactions for user")
 	}
 
-	var resultString string
+	var resultString []string
+	resultString = make([]string, 0)
 	for _, transactionTmp := range transactionsList {
 		date := fmt.Sprint(transactionTmp.Date)
-		resultString = resultString + fmt.Sprintf("user pay %s for %s at %s", transactionTmp.MoneyAmount, transactionTmp.ForService, date) + "\n"
+		resultString = append(resultString, fmt.Sprintf("user pay %s for %s at %s", transactionTmp.MoneyAmount, transactionTmp.ForService, date))
 	}
 
 	return resultString, err
