@@ -31,7 +31,10 @@ The users, transactions, masterBalance tables are initially empty. The service t
 ![billingRequest](https://user-images.githubusercontent.com/45081619/201554334-0d65e4d9-9dfc-4f66-89c5-42888cef068d.png)
 <br> *Pic 2. Billing request.* <br><br>
 #### Response:<br><br>
-![изображение](https://user-images.githubusercontent.com/45081619/201555690-41b8103e-813d-4d5a-87af-62dc5279781c.png)<br> *Pic 3. Billing succesful response.* <br><br>
+![изображение](https://user-images.githubusercontent.com/45081619/201555690-41b8103e-813d-4d5a-87af-62dc5279781c.png)
+<br> *Pic 3. Billing succesful response.* <br><br>
+![изображение](https://user-images.githubusercontent.com/45081619/201653801-4e0d56a0-4dbc-45e6-8d0e-de6238b72de4.png)
+<br> *Pic 3.1. Billing succesful response with creatig new user.* <br><br>
 ![изображение](https://user-images.githubusercontent.com/45081619/201632684-5acca833-e7e8-4c81-ab97-d98b013eaea7.png)
 <br> *Pic 4. Billing response with error.* <br><br>
 
