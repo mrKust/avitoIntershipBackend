@@ -50,7 +50,6 @@ func (b bisLogic) Billing(ctx context.Context, user *User) error {
 
 	b.mutex.Lock()
 	defer b.mutex.Unlock()
-	b.logger.Debug("read val 1")
 	userInDB, err = b.repositoryUser.FindOne(ctx, fmt.Sprintf("%d", user.ID))
 	if err != nil {
 		newUser := User{Balance: user.Balance}
@@ -67,7 +66,6 @@ func (b bisLogic) Billing(ctx context.Context, user *User) error {
 
 	tmpVal2, _ := strconv.ParseFloat(userInDB.Balance, 64)
 
-	b.logger.Debug("count balance 2")
 	userInDB.Balance = fmt.Sprintf("%f", tmpVal1+tmpVal2)
 	user.Balance = userInDB.Balance
 
@@ -77,7 +75,6 @@ func (b bisLogic) Billing(ctx context.Context, user *User) error {
 		return errTx
 	}
 
-	b.logger.Debug("update value in db 3")
 	err = b.repositoryUser.Update(ctx, userInDB)
 
 	if err != nil {
@@ -117,6 +114,7 @@ func (b bisLogic) ReserveMoney(ctx context.Context, balance *masterBalance.Maste
 	}
 
 	b.mutex.Lock()
+	defer b.mutex.Unlock()
 	user, err = b.repositoryUser.FindOne(ctx, balance.FromId)
 	if err != nil {
 		b.logger.Debugf("can't get user from db")
@@ -182,7 +180,6 @@ func (b bisLogic) ReserveMoney(ctx context.Context, balance *masterBalance.Maste
 		return err
 	}
 	tx.Commit(context.Background())
-	b.mutex.Unlock()
 
 	return nil
 }
@@ -197,6 +194,7 @@ func (b bisLogic) AcceptMoney(ctx context.Context, balance *masterBalance.Master
 	}
 
 	b.mutex.Lock()
+	defer b.mutex.Unlock()
 	err = b.repositoryMasterBalance.FindOneByParam(ctx, balance)
 
 	if err != nil {
@@ -240,7 +238,6 @@ func (b bisLogic) AcceptMoney(ctx context.Context, balance *masterBalance.Master
 		return err
 	}
 	tx.Commit(context.Background())
-	b.mutex.Unlock()
 
 	return nil
 }
@@ -257,6 +254,7 @@ func (b bisLogic) RejectMoney(ctx context.Context, balance *masterBalance.Master
 	}
 
 	b.mutex.Lock()
+	defer b.mutex.Unlock()
 	err = b.repositoryMasterBalance.FindOneByParam(ctx, balance)
 	if err != nil {
 		b.logger.Debugf("can't get masterBal from db")
@@ -319,7 +317,6 @@ func (b bisLogic) RejectMoney(ctx context.Context, balance *masterBalance.Master
 		return err
 	}
 	tx.Commit(context.Background())
-	b.mutex.Unlock()
 
 	return nil
 }
