@@ -1,0 +1,14 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "description": "This service help to work with users balance",
+        "title": "Avito backend internship",
+        "contact": {
+            "email": "dimvas2010@yandex.ru"
+        },
+        "version": "1.0"
+    },
+    "host": "localhost:8080",
+    "basePath": "/",
+    "paths": {}
+}

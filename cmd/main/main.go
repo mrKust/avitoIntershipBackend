@@ -12,11 +12,21 @@ import (
 	"context"
 	"fmt"
 	"github.com/gin-gonic/gin"
+	_ "github.com/swaggo/files"
+	_ "github.com/swaggo/gin-swagger" // gin-swagger middleware
 	"net"
 	"net/http"
 	"time"
 )
 
+// @title           Avito backend internship
+// @version         1.0
+// @description     This service help to work with users balance
+
+// @contact.email  dimvas2010@yandex.ru
+
+// @host      localhost:8080
+// @BasePath  /
 func main() {
 
 	logger := logging.GetLogger()
@@ -35,7 +45,7 @@ func main() {
 	serviceRepository := serviceDB.NewRepository(postgresSQLClient, logger)
 	masterBalRepository := masterBalDB.NewRepository(postgresSQLClient, logger)
 
-	logger.Info("create service and repositories")
+	logger.Info("create service")
 	serv := user.NewService(userRepository, masterBalRepository, transactionRepository, serviceRepository, logger)
 
 	logger.Info("register user handler")

@@ -1,0 +1,10 @@
+basePath: /
+host: localhost:8080
+info:
+  contact:
+    email: dimvas2010@yandex.ru
+  description: This service help to work with users balance
+  title: Avito backend internship
+  version: "1.0"
+paths: {}
+swagger: "2.0"

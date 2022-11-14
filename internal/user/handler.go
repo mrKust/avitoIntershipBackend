@@ -5,6 +5,8 @@ import (
 	"avitoIntershipBackend/internal/masterBalance"
 	"avitoIntershipBackend/pkg/logging"
 	"github.com/gin-gonic/gin"
+	_ "github.com/swaggo/swag/example/celler/httputil"
+	_ "github.com/swaggo/swag/example/celler/model"
 	"strings"
 )
 
@@ -43,6 +45,17 @@ func (h *handler) Register(router *gin.Engine) {
 
 }
 
+// AddBilling godoc
+// @Summary      Add money to user's balance
+// @Description  Add money to user's balance with billing systems (visa/mastercard)
+// @Tags         accounts, billings
+// @Accept       json
+// @Produce      json
+// @Param        id   balance      int  string  "User balance"
+// @Success      200  {object}  model.User
+// @Failure      400  {object}  httputil.HTTPError
+// @Failure      500  {object}  httputil.HTTPError
+// @Router       /billing [post]
 func (h *handler) AddBilling(c *gin.Context) {
 	var user User
 	var err error
@@ -59,6 +72,18 @@ func (h *handler) AddBilling(c *gin.Context) {
 	c.JSON(200, user)
 }
 
+// FreezeMoney godoc
+// @Summary      Reserves money
+// @Description  Reserves money from user balance to special master account
+// @Tags         accounts, reserve
+// @Accept       json
+// @Produce      text
+// @Param        from_id service_id order_id money_amount string "Master balance request"
+// @Success      200  {string}
+// @Failure		 204  {object}  httputil.HTTPError
+// @Failure      400  {object}  httputil.HTTPError
+// @Failure      500  {object}  httputil.HTTPError
+// @Router       /moneyFreeze [post]
 func (h *handler) FreezeMoney(c *gin.Context) {
 	var masterReq masterBalance.MasterBalance
 	var err error
@@ -81,6 +106,17 @@ func (h *handler) FreezeMoney(c *gin.Context) {
 	c.String(200, "reserved bill id %d", masterReq.ID)
 }
 
+// AcceptMoney godoc
+// @Summary      Accepts money
+// @Description  Accept money from master balance when service is done
+// @Tags         accounts, reserve
+// @Accept       json
+// @Produce      text
+// @Param        from_id service_id order_id money_amount string "Master balance request"
+// @Success      200  {object}
+// @Failure      400  {object}  httputil.HTTPError
+// @Failure      500  {object}  httputil.HTTPError
+// @Router       /moneyAccept [post]
 func (h *handler) AcceptMoney(c *gin.Context) {
 	var masterReq masterBalance.MasterBalance
 	var err error
@@ -99,6 +135,17 @@ func (h *handler) AcceptMoney(c *gin.Context) {
 	c.Status(200)
 }
 
+// RejectMoney godoc
+// @Summary      Rejects money
+// @Description  Return money to user when payment for service is rejected
+// @Tags         accounts, reserve, reject
+// @Accept       json
+// @Produce      text
+// @Param        from_id service_id order_id money_amount string "Master balance request"
+// @Success      200  {object}
+// @Failure      400  {object}  httputil.HTTPError
+// @Failure      500  {object}  httputil.HTTPError
+// @Router       /moneyAccept [post]
 func (h *handler) RejectMoney(c *gin.Context) {
 	var masterReq masterBalance.MasterBalance
 	var err error
@@ -117,6 +164,17 @@ func (h *handler) RejectMoney(c *gin.Context) {
 	c.Status(200)
 }
 
+// GetUserBalance godoc
+// @Summary      Returns user balance
+// @Description  Return user account with his balance
+// @Tags         accounts, balance
+// @Accept       json
+// @Produce      json
+// @Param        id   balance      int  string  "User balance"
+// @Success      200  {object}  model.User
+// @Failure      404  {object}  httputil.HTTPError
+// @Failure      500  {object}  httputil.HTTPError
+// @Router       /users/:id [get]
 func (h *handler) GetUserBalance(c *gin.Context) {
 	var user User
 	var err error
@@ -133,6 +191,17 @@ func (h *handler) GetUserBalance(c *gin.Context) {
 	c.JSON(200, user)
 }
 
+// GetReport godoc
+// @Summary      Returns report for date range
+// @Description  Return link to report.csv file with money for every service
+// @Tags         accounts, balance, report
+// @Accept       json
+// @Produce      text
+// @Param        month year     string
+// @Success      200  {object}  model.User
+// @Failure      404  {object}  httputil.HTTPError
+// @Failure      500  {object}  httputil.HTTPError
+// @Router       /report/:month/:year [get]
 func (h *handler) GetReport(c *gin.Context) {
 	var linkToReport string
 	var err error
@@ -150,6 +219,18 @@ func (h *handler) GetReport(c *gin.Context) {
 	c.String(200, "%s", linkToReport)
 }
 
+// GetUserTransactions godoc
+// @Summary      Returns info about user transactions
+// @Description  Return text with history of transactions
+// @Tags         accounts, balance
+// @Accept       json
+// @Produce      text
+// @Param        userid pageNumber sortSum sortDate      string
+// @Success      200  {object}  model.User
+// @Failure      404  {object}  httputil.HTTPError
+// @Failure      404  {object}  httputil.HTTPError
+// @Failure      500  {object}  httputil.HTTPError
+// @Router       /transactions/:userid/:pageNum/:sortSum/:sortDate [get]
 func (h *handler) GetUserTransactions(c *gin.Context) {
 	var transactionsList string
 	var err error
