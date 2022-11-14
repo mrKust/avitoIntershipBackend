@@ -1,6 +1,7 @@
 package main
 
 import (
+	_ "avitoIntershipBackend/docs"
 	"avitoIntershipBackend/internal/config"
 	masterBalDB "avitoIntershipBackend/internal/masterBalance/db"
 	serviceDB "avitoIntershipBackend/internal/service/db"
@@ -12,8 +13,8 @@ import (
 	"context"
 	"fmt"
 	"github.com/gin-gonic/gin"
-	_ "github.com/swaggo/files"
-	_ "github.com/swaggo/gin-swagger" // gin-swagger middleware
+	swaggerFiles "github.com/swaggo/files"
+	ginSwagger "github.com/swaggo/gin-swagger"
 	"net"
 	"net/http"
 	"time"
@@ -51,6 +52,9 @@ func main() {
 	logger.Info("register user handler")
 	handler := user.NewHandler(*logger, serv)
 	handler.Register(router)
+
+	logger.Info("register swagger")
+	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
 	start(router, cfg)
 

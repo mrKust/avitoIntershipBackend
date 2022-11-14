@@ -6,8 +6,6 @@ import (
 	"avitoIntershipBackend/pkg/logging"
 	"fmt"
 	"github.com/gin-gonic/gin"
-	_ "github.com/swaggo/swag/example/celler/httputil"
-	_ "github.com/swaggo/swag/example/celler/model"
 	"strings"
 )
 
@@ -52,10 +50,10 @@ func (h *handler) Register(router *gin.Engine) {
 // @Tags         accounts, billings
 // @Accept       json
 // @Produce      json
-// @Param        id   balance      int  string  "User balance"
-// @Success      200  {object}  model.User
-// @Failure      400  {object}  httputil.HTTPError
-// @Failure      500  {object}  httputil.HTTPError
+// @Param        message  body  User  true  "Users Info"
+// @Success      200
+// @Failure      400
+// @Failure      500
 // @Router       /billing [post]
 func (h *handler) AddBilling(c *gin.Context) {
 	var user User
@@ -82,11 +80,10 @@ func (h *handler) AddBilling(c *gin.Context) {
 // @Tags         accounts, reserve
 // @Accept       json
 // @Produce      json
-// @Param        from_id service_id order_id money_amount string "Master balance request"
-// @Success      200  {string}
-// @Failure		 204  {object}  httputil.HTTPError
-// @Failure      400  {object}  httputil.HTTPError
-// @Failure      500  {object}  httputil.HTTPError
+// @Param        message  body  masterBalance.MasterBalance  true  "Request to freeze money(without id)"
+// @Success      200
+// @Failure      400
+// @Failure      500
 // @Router       /moneyFreeze [post]
 func (h *handler) FreezeMoney(c *gin.Context) {
 	var masterReq masterBalance.MasterBalance
@@ -120,10 +117,10 @@ func (h *handler) FreezeMoney(c *gin.Context) {
 // @Tags         accounts, reserve
 // @Accept       json
 // @Produce      json
-// @Param        from_id service_id order_id money_amount string "Master balance request"
-// @Success      200  {object}
-// @Failure      400  {object}  httputil.HTTPError
-// @Failure      500  {object}  httputil.HTTPError
+// @Param        message  body  masterBalance.MasterBalance  true  "Request to freeze money(without id)"
+// @Success      200
+// @Failure      400
+// @Failure      500
 // @Router       /moneyAccept [post]
 func (h *handler) AcceptMoney(c *gin.Context) {
 	var masterReq masterBalance.MasterBalance
@@ -151,11 +148,11 @@ func (h *handler) AcceptMoney(c *gin.Context) {
 // @Tags         accounts, reserve, reject
 // @Accept       json
 // @Produce      json
-// @Param        from_id service_id order_id money_amount string "Master balance request"
-// @Success      200  {object}
-// @Failure      400  {object}  httputil.HTTPError
-// @Failure      500  {object}  httputil.HTTPError
-// @Router       /moneyAccept [post]
+// @Param        message  body  masterBalance.MasterBalance  true  "Request to freeze money(without id)"
+// @Success      200
+// @Failure      400
+// @Failure      500
+// @Router       /moneyReject [post]
 func (h *handler) RejectMoney(c *gin.Context) {
 	var masterReq masterBalance.MasterBalance
 	var err error
@@ -181,10 +178,10 @@ func (h *handler) RejectMoney(c *gin.Context) {
 // @Tags         accounts, balance
 // @Accept       json
 // @Produce      json
-// @Param        id   balance      int  string  "User balance"
-// @Success      200  {object}  model.User
-// @Failure      404  {object}  httputil.HTTPError
-// @Failure      500  {object}  httputil.HTTPError
+// @Param		 id    path      int     true  "User's id"
+// @Success      200
+// @Failure      404
+// @Failure      500
 // @Router       /users/:id [get]
 func (h *handler) GetUserBalance(c *gin.Context) {
 	var user User
@@ -210,10 +207,11 @@ func (h *handler) GetUserBalance(c *gin.Context) {
 // @Tags         accounts, balance, report
 // @Accept       json
 // @Produce      json
-// @Param        month year     string
-// @Success      200  {object}  model.User
-// @Failure      404  {object}  httputil.HTTPError
-// @Failure      500  {object}  httputil.HTTPError
+// @Param		 month    path      int     true  "Needed month for report"
+// @Param		 year     path      int     true  "Needed year for report"
+// @Success      200
+// @Failure      404
+// @Failure      500
 // @Router       /report/:month/:year [get]
 func (h *handler) GetReport(c *gin.Context) {
 	var linkToReport string
@@ -240,11 +238,14 @@ func (h *handler) GetReport(c *gin.Context) {
 // @Tags         accounts, balance
 // @Accept       json
 // @Produce      json
-// @Param        userid pageNumber sortSum sortDate      string
-// @Success      200  {object}  model.User
-// @Failure      404  {object}  httputil.HTTPError
-// @Failure      404  {object}  httputil.HTTPError
-// @Failure      500  {object}  httputil.HTTPError
+// @Param		 userId   path      int     true  "id of needed user"
+// @Param		 pageNum  path      int     true  "number of searching page"
+// @Param		 sortSum  path      string     true  "Parameter for sort by sum (asc/desc)"
+// @Param		 sortDate  path     string     true  "Parameter for sort by date (asc/desc)"
+// @Success      200
+// @Failure      404
+// @Failure      404
+// @Failure      500
 // @Router       /transactions/:userid/:pageNum/:sortSum/:sortDate [get]
 func (h *handler) GetUserTransactions(c *gin.Context) {
 	var transactionsList []string
