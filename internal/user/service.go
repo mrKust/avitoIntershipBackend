@@ -5,10 +5,12 @@ import (
 	"avitoIntershipBackend/internal/masterBalance"
 	"avitoIntershipBackend/internal/service"
 	"avitoIntershipBackend/internal/transaction"
+	"avitoIntershipBackend/pkg/client/postgresql"
 	"avitoIntershipBackend/pkg/logging"
 	"context"
 	"encoding/csv"
 	"fmt"
+	"github.com/jackc/pgx/v4"
 	"os"
 	"strconv"
 	"strings"
@@ -31,6 +33,7 @@ type bisLogic struct {
 	repositoryTransaction   transaction.Repository
 	repositoryService       service.Repository
 	logger                  *logging.Logger
+	conn                    postgresql.Client
 }
 
 func (b bisLogic) Billing(ctx context.Context, user *User) error {
@@ -61,8 +64,17 @@ func (b bisLogic) Billing(ctx context.Context, user *User) error {
 
 	userInDB.Balance = fmt.Sprintf("%f", tmpVal1+tmpVal2)
 	user.Balance = userInDB.Balance
+
+	tx, errTx := b.conn.BeginTx(context.Background(), pgx.TxOptions{})
+	if errTx != nil {
+		b.logger.Debugf("can't strat transaction")
+		return errTx
+	}
+
 	err = b.repositoryUser.Update(ctx, userInDB)
+
 	if err != nil {
+		tx.Rollback(context.Background())
 		return err
 	}
 
@@ -77,9 +89,11 @@ func (b bisLogic) Billing(ctx context.Context, user *User) error {
 
 	err = b.repositoryTransaction.Create(ctx, &newTransaction)
 	if err != nil {
+		tx.Rollback(context.Background())
 		b.logger.Debugf("can't write action in transactions list")
 		return err
 	}
+	tx.Commit(context.Background())
 
 	return nil
 }
@@ -117,20 +131,29 @@ func (b bisLogic) ReserveMoney(ctx context.Context, balance *masterBalance.Maste
 	}
 
 	user.Balance = fmt.Sprintf("%f", balanceAfterFreeze)
+	tx, errTx := b.conn.BeginTx(context.Background(), pgx.TxOptions{})
+	if errTx != nil {
+		b.logger.Debugf("can't strat transaction")
+		return errTx
+	}
+
 	err = b.repositoryUser.Update(ctx, user)
 	if err != nil {
+		tx.Rollback(context.Background())
 		b.logger.Debugf("can't update user in db")
 		return err
 	}
 
 	err = b.repositoryMasterBalance.Create(ctx, balance)
 	if err != nil {
+		tx.Rollback(context.Background())
 		b.logger.Debugf("can't save masterbal in db")
 		return err
 	}
 
 	serviceTmp, err := b.repositoryService.FindOne(ctx, balance.ServiceId)
 	if err != nil {
+		tx.Rollback(context.Background())
 		b.logger.Debugf("can't get service from db")
 		return err
 	}
@@ -146,9 +169,11 @@ func (b bisLogic) ReserveMoney(ctx context.Context, balance *masterBalance.Maste
 
 	err = b.repositoryTransaction.Create(ctx, &newTransaction)
 	if err != nil {
+		tx.Rollback(context.Background())
 		b.logger.Debugf("can't write action in transactions list")
 		return err
 	}
+	tx.Commit(context.Background())
 
 	return nil
 }
@@ -164,14 +189,27 @@ func (b bisLogic) AcceptMoney(ctx context.Context, balance *masterBalance.Master
 
 	err = b.repositoryMasterBalance.FindOneByParam(ctx, balance)
 
+	if err != nil {
+		b.logger.Debugf("can't find request in db")
+		return err
+	}
+
+	tx, errTx := b.conn.BeginTx(context.Background(), pgx.TxOptions{})
+	if errTx != nil {
+		b.logger.Debugf("can't strat transaction")
+		return errTx
+	}
+
 	err = b.repositoryMasterBalance.Delete(ctx, fmt.Sprintf("%d", balance.ID))
 	if err != nil {
+		tx.Rollback(context.Background())
 		b.logger.Debugf("can't delete masterbal in db")
 		return err
 	}
 
 	serviceTmp, err := b.repositoryService.FindOne(ctx, balance.ServiceId)
 	if err != nil {
+		tx.Rollback(context.Background())
 		b.logger.Debugf("can't get service from db")
 		return err
 	}
@@ -187,9 +225,11 @@ func (b bisLogic) AcceptMoney(ctx context.Context, balance *masterBalance.Master
 
 	err = b.repositoryTransaction.Create(ctx, &newTransaction)
 	if err != nil {
+		tx.Rollback(context.Background())
 		b.logger.Debugf("can't write action in transactions list")
 		return err
 	}
+	tx.Commit(context.Background())
 
 	return nil
 }
@@ -223,20 +263,30 @@ func (b bisLogic) RejectMoney(ctx context.Context, balance *masterBalance.Master
 	balanceAfterReject := tmpVal2 + tmpVal1
 
 	user.Balance = fmt.Sprintf("%f", balanceAfterReject)
+
+	tx, errTx := b.conn.BeginTx(context.Background(), pgx.TxOptions{})
+	if errTx != nil {
+		b.logger.Debugf("can't strat transaction")
+		return errTx
+	}
+
 	err = b.repositoryUser.Update(ctx, user)
 	if err != nil {
+		tx.Rollback(context.Background())
 		b.logger.Debugf("can't update user in db")
 		return err
 	}
 
 	err = b.repositoryMasterBalance.Delete(ctx, fmt.Sprintf("%d", balance.ID))
 	if err != nil {
+		tx.Rollback(context.Background())
 		b.logger.Debugf("can't delete masterbal from db")
 		return err
 	}
 
 	serviceTmp, err := b.repositoryService.FindOne(ctx, balance.ServiceId)
 	if err != nil {
+		tx.Rollback(context.Background())
 		b.logger.Debugf("can't get service from db")
 		return err
 	}
@@ -252,9 +302,11 @@ func (b bisLogic) RejectMoney(ctx context.Context, balance *masterBalance.Master
 
 	err = b.repositoryTransaction.Create(ctx, &newTransaction)
 	if err != nil {
+		tx.Rollback(context.Background())
 		b.logger.Debugf("can't write action in transactions list")
 		return err
 	}
+	tx.Commit(context.Background())
 
 	return nil
 }
@@ -397,12 +449,14 @@ func (b bisLogic) GetUserTransactions(ctx context.Context, id string, pageNum st
 }
 
 func NewService(repositoryUser Repository, repositoryMasterBalance masterBalance.Repository,
-	repositoryTransaction transaction.Repository, repositoryService service.Repository, logger *logging.Logger) BusinessLogic {
+	repositoryTransaction transaction.Repository, repositoryService service.Repository,
+	logger *logging.Logger, conn postgresql.Client) BusinessLogic {
 	return &bisLogic{
 		repositoryUser:          repositoryUser,
 		repositoryMasterBalance: repositoryMasterBalance,
 		repositoryTransaction:   repositoryTransaction,
 		repositoryService:       repositoryService,
 		logger:                  logger,
+		conn:                    conn,
 	}
 }
