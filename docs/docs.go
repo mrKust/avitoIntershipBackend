@@ -72,12 +72,12 @@ const docTemplate = `{
                 "summary": "Accepts money",
                 "parameters": [
                     {
-                        "description": "Request to accept money",
+                        "description": "Request to freeze money",
                         "name": "message",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/masterBalance.MasterBalance"
+                            "$ref": "#/definitions/masterBalance.CreateDTO"
                         }
                     }
                 ],
@@ -115,7 +115,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/masterBalance.MasterBalance"
+                            "$ref": "#/definitions/masterBalance.CreateDTO"
                         }
                     }
                 ],
@@ -154,7 +154,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/masterBalance.MasterBalance"
+                            "$ref": "#/definitions/masterBalance.CreateDTO"
                         }
                     }
                 ],
@@ -171,7 +171,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/report/:month/:year": {
+        "/report/{month}/{year}": {
             "get": {
                 "description": "Return link to report.csv file with money for every service",
                 "consumes": [
@@ -215,7 +215,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/transactions/:userid/:pageNum/:sortSum/:sortDate": {
+        "/transactions/{userid}/{pageNum}/{sortSum}/{sortDate}": {
             "get": {
                 "description": "Return text with history of transactions",
                 "consumes": [
@@ -233,7 +233,7 @@ const docTemplate = `{
                     {
                         "type": "integer",
                         "description": "id of needed user",
-                        "name": "userId",
+                        "name": "userid",
                         "in": "path",
                         "required": true
                     },
@@ -272,7 +272,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/users/:id": {
+        "/users/{id}": {
             "get": {
                 "description": "Return user account with his balance",
                 "consumes": [
@@ -310,14 +310,11 @@ const docTemplate = `{
         }
     },
     "definitions": {
-        "masterBalance.MasterBalance": {
+        "masterBalance.CreateDTO": {
             "type": "object",
             "properties": {
                 "from_id": {
                     "type": "string"
-                },
-                "id": {
-                    "type": "integer"
                 },
                 "money_amount": {
                     "type": "string"

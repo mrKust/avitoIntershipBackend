@@ -7,3 +7,10 @@ type MasterBalance struct {
 	OrderId     string `json:"order_id"`
 	MoneyAmount string `json:"money_amount"`
 }
+
+type CreateDTO struct {
+	FromId      string `json:"from_id"`
+	ServiceId   string `json:"service_id"`
+	OrderId     string `json:"order_id"`
+	MoneyAmount string `json:"money_amount"`
+}

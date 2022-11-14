@@ -1,11 +1,9 @@
 basePath: /
 definitions:
-  masterBalance.MasterBalance:
+  masterBalance.CreateDTO:
     properties:
       from_id:
         type: string
-      id:
-        type: integer
       money_amount:
         type: string
       order_id:
@@ -59,12 +57,12 @@ paths:
       - application/json
       description: Accept money from master balance when service is done
       parameters:
-      - description: Request to accept money
+      - description: Request to freeze money
         in: body
         name: message
         required: true
         schema:
-          $ref: '#/definitions/masterBalance.MasterBalance'
+          $ref: '#/definitions/masterBalance.CreateDTO'
       produces:
       - application/json
       responses:
@@ -89,7 +87,7 @@ paths:
         name: message
         required: true
         schema:
-          $ref: '#/definitions/masterBalance.MasterBalance'
+          $ref: '#/definitions/masterBalance.CreateDTO'
       produces:
       - application/json
       responses:
@@ -114,7 +112,7 @@ paths:
         name: message
         required: true
         schema:
-          $ref: '#/definitions/masterBalance.MasterBalance'
+          $ref: '#/definitions/masterBalance.CreateDTO'
       produces:
       - application/json
       responses:
@@ -129,7 +127,7 @@ paths:
       - accounts
       - reserve
       - reject
-  /report/:month/:year:
+  /report/{month}/{year}:
     get:
       consumes:
       - application/json
@@ -159,7 +157,7 @@ paths:
       - accounts
       - balance
       - report
-  /transactions/:userid/:pageNum/:sortSum/:sortDate:
+  /transactions/{userid}/{pageNum}/{sortSum}/{sortDate}:
     get:
       consumes:
       - application/json
@@ -167,7 +165,7 @@ paths:
       parameters:
       - description: id of needed user
         in: path
-        name: userId
+        name: userid
         required: true
         type: integer
       - description: number of searching page
@@ -198,7 +196,7 @@ paths:
       tags:
       - accounts
       - balance
-  /users/:id:
+  /users/{id}:
     get:
       consumes:
       - application/json

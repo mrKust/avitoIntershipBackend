@@ -47,6 +47,7 @@ func (b bisLogic) Billing(ctx context.Context, user *User) error {
 	if err != nil {
 		newUser := User{Balance: user.Balance}
 		b.repositoryUser.Create(ctx, &newUser)
+		user.ID = newUser.ID
 		return nil
 	}
 

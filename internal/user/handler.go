@@ -80,7 +80,7 @@ func (h *handler) AddBilling(c *gin.Context) {
 // @Tags         accounts, reserve
 // @Accept       json
 // @Produce      json
-// @Param        message  body  masterBalance.MasterBalance  true  "Request to freeze money(without id)"
+// @Param        message  body  masterBalance.CreateDTO  true  "Request to freeze money"
 // @Success      200
 // @Failure      400
 // @Failure      500
@@ -117,7 +117,7 @@ func (h *handler) FreezeMoney(c *gin.Context) {
 // @Tags         accounts, reserve
 // @Accept       json
 // @Produce      json
-// @Param        message  body  masterBalance.MasterBalance  true  "Request to freeze money(without id)"
+// @Param        message  body  masterBalance.CreateDTO  true  "Request to freeze money"
 // @Success      200
 // @Failure      400
 // @Failure      500
@@ -148,7 +148,7 @@ func (h *handler) AcceptMoney(c *gin.Context) {
 // @Tags         accounts, reserve, reject
 // @Accept       json
 // @Produce      json
-// @Param        message  body  masterBalance.MasterBalance  true  "Request to freeze money(without id)"
+// @Param        message  body  masterBalance.CreateDTO  true  "Request to freeze money"
 // @Success      200
 // @Failure      400
 // @Failure      500
@@ -182,7 +182,7 @@ func (h *handler) RejectMoney(c *gin.Context) {
 // @Success      200
 // @Failure      404
 // @Failure      500
-// @Router       /users/:id [get]
+// @Router       /users/{id} [get]
 func (h *handler) GetUserBalance(c *gin.Context) {
 	var user User
 	var err error
@@ -212,7 +212,7 @@ func (h *handler) GetUserBalance(c *gin.Context) {
 // @Success      200
 // @Failure      404
 // @Failure      500
-// @Router       /report/:month/:year [get]
+// @Router       /report/{month}/{year} [get]
 func (h *handler) GetReport(c *gin.Context) {
 	var linkToReport string
 	var err error
@@ -238,7 +238,7 @@ func (h *handler) GetReport(c *gin.Context) {
 // @Tags         accounts, balance
 // @Accept       json
 // @Produce      json
-// @Param		 userId   path      int     true  "id of needed user"
+// @Param		 userid   path      int     true  "id of needed user"
 // @Param		 pageNum  path      int     true  "number of searching page"
 // @Param		 sortSum  path      string     true  "Parameter for sort by sum (asc/desc)"
 // @Param		 sortDate  path     string     true  "Parameter for sort by date (asc/desc)"
@@ -246,7 +246,7 @@ func (h *handler) GetReport(c *gin.Context) {
 // @Failure      404
 // @Failure      404
 // @Failure      500
-// @Router       /transactions/:userid/:pageNum/:sortSum/:sortDate [get]
+// @Router       /transactions/{userid}/{pageNum}/{sortSum}/{sortDate} [get]
 func (h *handler) GetUserTransactions(c *gin.Context) {
 	var transactionsList []string
 	var err error
