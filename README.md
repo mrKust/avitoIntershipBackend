@@ -21,6 +21,11 @@ docker-compose up
 
 After the containers are deployed, the microservice is ready.
 
+Link to OpenApi specification
+```bash
+http://localhost:8080/swagger/index.html/
+```
+
 ## Request/response examples
 
 The users, transactions, masterBalance tables are initially empty. The service table looks like this:<br><br>
